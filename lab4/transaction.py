@@ -9,6 +9,7 @@ class Transaction:
         self.__currency = currency
         self.__course = course
         self.__amount = amount
+
     @property
     def source(self):
         return self.__source
