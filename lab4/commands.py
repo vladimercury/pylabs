@@ -1,5 +1,7 @@
 from lab4.bank import Bank
 
+command_client = None
+
 
 class CommandError(Exception):
     def __init__(self, message):
@@ -7,16 +9,6 @@ class CommandError(Exception):
 
 
 class Command:
-    __client = None
-
-    @classmethod
-    def get_client(cls):
-        return cls.__client
-
-    @classmethod
-    def set_client(cls, client):
-        cls.__client = client
-
     def __init__(self, bank: Bank):
         self.__bank = bank
 
@@ -114,12 +106,13 @@ class ClientCommand(Command):
     def __call__(self, *args, **kwargs):
         if len(args):
             try:
-                self.__class__.set_client(self.bank.get_client(args[0]))
+                global command_client
+                command_client = self.bank.get_client(args[0])
                 return "Client set to %s" % args[0]
             except KeyError:
                 raise CommandError("Client with given name already exists")
         else:
-            client = self.__class__.get_client()
+            client = command_client
             if client is None:
                 return "Current client not set"
             else:
@@ -151,7 +144,79 @@ class CourseCommand(Command):
 
 class SendMoneyCommand(Command):
     def help(self):
-        return "ACCOUNT_ID AMOUNT [CURRENCY]\n\tSend money to another account"
+        return "SOURCE_ACC DEST_ACC AMOUNT [CURRENCY]\n\tSend money to another account"
 
     def __call__(self, *args, **kwargs):
-        pass
+        if len(args) > 2:
+            source, dest, amount, *currency = args
+            client = command_client
+            if client is None:
+                raise CommandError("Current client is not set")
+            try:
+                source_acc = self.bank.get_account(source)
+                dest_acc = self.bank.get_account(dest)
+                amount_val = float(amount)
+            except KeyError:
+                raise CommandError("Account not found")
+            except ValueError as e:
+                raise CommandError("Amount is not a number")
+            currency_name = currency[0] if len(currency) else None
+            if source_acc.id not in client.accounts:
+                raise CommandError("Current client is not source account owner")
+            try:
+                source_acc.send_cash(dest_acc, amount_val, currency_name)
+            except ValueError as e:
+                raise CommandError(str(e))
+            return ""
+        else:
+            raise CommandError("Invalid argument list")
+
+
+class ShowCashCommand(Command):
+    def help(self):
+        return "ACCOUNT_ID\n\tShow cash for account"
+
+    def __call__(self, *args, **kwargs):
+        if len(args):
+            account_id, *extra = args
+            try:
+                account = self.bank.get_account(account_id)
+            except KeyError:
+                raise CommandError("Account not found")
+            if command_client is None:
+                raise CommandError("Current client not set")
+            if account_id not in command_client.accounts:
+                raise CommandError("Current client is not account owner")
+            return "%.2f %s" % (account.amount, self.bank.base_currency)
+        else:
+            raise CommandError("Account id not provided")
+
+
+class ShowTransactionHistoryCommand(Command):
+    def help(self):
+        return "ACCOUNT_ID\n\tShow transaction history for account"
+
+    def __call__(self, *args, **kwargs):
+        if len(args):
+            account_id, *extra = args
+            try:
+                account = self.bank.get_account(account_id)
+            except KeyError:
+                raise CommandError("Account not found")
+            if command_client is None:
+                raise CommandError("Current client not set")
+            if account_id not in command_client.accounts:
+                raise CommandError("Current client is not account owner")
+            lines = []
+            for transaction in account.transaction_history:
+                line = "%s -> %s: %.2f %s at %s"
+                line_args = (transaction.source.id, transaction.destination.id, transaction.amount,
+                             transaction.currency, transaction.date)
+                if transaction.currency != transaction.base_currency:
+                    line += " with 1 %s = %.6f %s (%.2f %s total)"
+                    line_args = line_args + (transaction.currency, transaction.course, transaction.base_currency,
+                                             transaction.amount * transaction.course, transaction.base_currency)
+                lines.append(line % line_args)
+            return "\n".join(lines)
+        else:
+            raise CommandError("Account id not provided")

@@ -37,16 +37,27 @@ class Account:
         destination.deposit(self, amount, currency)
 
     def _withdraw(self, destination, amount: float, currency: str = None):
-        if currency is None:
+        course = 1.0
+        if currency is None or currency == self.bank.base_currency:
             currency = self.bank.base_currency
-        course = self._get_course(currency)
+        else:
+            course = self._get_course(currency)
+            if course is None:
+                raise ValueError("Course for %s not provided" % currency)
+        diff = amount * course
+        if diff > self.__amount:
+            raise ValueError("Not enough money")
         self.__amount -= amount * course
         self.__history.append(Transaction(self, destination, amount, currency, course))
 
     def deposit(self, source, amount: float, currency: str = None):
         if currency is None:
             currency = self.bank.base_currency
-        course = self._get_course(currency)
+            course = 1.0
+        else:
+            course = self._get_course(currency)
+            if course is None:
+                raise ValueError("Course for %s not provided" % currency)
         self.__amount += amount * course
         self.__history.append(Transaction(source, self, amount, currency, course))
 

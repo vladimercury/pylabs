@@ -7,10 +7,13 @@ commands = {
     "addacc": AddAccountCommand(bank),
     "addcl": AddClientCommand(bank),
     "cash": CountTotalCashCommand(bank),
+    "cashacc": ShowCashCommand(bank),
     "client": ClientCommand(bank),
     "course": CourseCommand(bank),
+    "history": ShowTransactionHistoryCommand(bank),
     "listacc": BankListAccountsCommand(bank),
-    "listcl": BankListClientsCommand(bank)
+    "listcl": BankListClientsCommand(bank),
+    "send": SendMoneyCommand(bank)
 }
 
 while True:
