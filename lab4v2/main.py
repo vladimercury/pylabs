@@ -43,13 +43,18 @@ def bank_or_account_cash(*args):
             print("%.2f %s (%.2f %s)" % (cash, currency, base_cash, base_currency))
 
 
+def client_info(*args):
+    """\n\tShow context client info"""
+    check_context()
+
+
 def get_or_set_context(*args):
     """[client_name:str]\n\tGet pr set client context"""
     global context
     client_name = args[0] if len(args) else None
     if client_name is None:
         check_context()
-        print("Client context is '%s'" % context.name)
+        print("Client '%s': %.2f %s" % context.info)
     else:
         context = bank.get_client(client_name)
         print("Client context set to '%s'" % context.name)
@@ -88,6 +93,20 @@ def send_cash(src_id, dst_id, cash, *args):
     print("Account '%s' cash is %.2f %s" % (account.id, account.cash, account.currency))
 
 
+def show_transaction_history(*args):
+    """[account_id:str]\n\tShow transaction history for bank/account"""
+    account_id = args[0] if len(args) else None
+    history = list()
+    if account_id is None:
+        history = bank.history
+    else:
+        check_context()
+        history = context.get_account_history(account_id)
+    for transaction in history:
+        print(str(transaction))
+    if len(history) == 0:
+        print("No transactions")
+
 commands = {
     "ca": add_account,
     "cash": bank_or_account_cash,
@@ -95,8 +114,9 @@ commands = {
     "cc": add_client,
     "list": list_accounts,
     "rate": get_or_set_exchange_rate,
-    "ctx": get_or_set_context,
-    "send": send_cash
+    "me": get_or_set_context,
+    "send": send_cash,
+    "hist": show_transaction_history
 }
 
 for command, func in sorted(commands.items()):
@@ -109,8 +129,8 @@ while True:
         if command in commands:
             try:
                 commands[command](*arguments)
-            # except ValueError or TypeError:
-            #     print("Invalid argument list", file=stderr)
+            except ValueError or TypeError:
+                print("Invalid argument list", file=stderr)
             except BankError as be:
                 print(be, file=stderr)
             except CommandError as ce:

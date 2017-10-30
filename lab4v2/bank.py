@@ -65,10 +65,15 @@ class Bank:
         self.__clients = dict()
         self.__rates = dict()
         self.__generator = self.get_id_generator(id_len)
+        self.__history = list()
 
     @property
     def base_currency(self):
         return self.__base_currency
+
+    @property
+    def history(self):
+        return self.__history
 
     def _get_account_record(self, account_id: str) -> AccountRecord:
         account_id = account_id.upper()
@@ -126,6 +131,7 @@ class Bank:
         transaction = Transaction(self, src_id, dst_id, cash, currency, exchange_rate)
         src_record.add_transaction(transaction)
         dst_record.add_transaction(transaction)
+        self.__history.append(transaction)
         return transaction, src_record.account
 
     def get_all_accounts(self) -> list:
@@ -144,14 +150,20 @@ class Bank:
     def get_account_owner(self, account: Account):
         return self._get_account_record(account.id).owner
 
-    def get_account_transaction_history(self, account: Account):
-        return self._get_account_record(account.id).history
+    def get_account_transaction_history(self, owner: Client, account_id: str):
+        record = self._get_account_record(account_id)
+        if record.owner.name != owner.name:
+            raise BankError("Client '%s' is not an account '%s' owner" % (owner.name, account_id))
+        return record.history
 
     def get_client(self, client_id: str):
         return self._get_client_record(client_id).client
 
     def get_client_accounts(self, client: Client):
         return self._get_client_record(client.name).accounts
+
+    def get_client_cash(self, client: Client):
+        return sum((account.base_currency_cash for acc_id, account in self._get_client_record(client.name).accounts))
 
     def get_exchange_rate(self, currency: str):
         currency = currency.upper()

@@ -1,3 +1,6 @@
+import datetime
+
+
 class Transaction:
     def __init__(self, bank, src_id: str, dst_id: str, cash: float, currency: str, course: float):
         self.__bank = bank
@@ -7,6 +10,7 @@ class Transaction:
         self.__currency = currency
         self.__base_currency = bank.base_currency
         self.__course = course
+        self.__time = datetime.datetime.now()
 
     @property
     def source_id(self) -> str:
@@ -40,14 +44,18 @@ class Transaction:
     def course(self) -> float:
         return self.__course
 
+    @property
+    def time(self) -> datetime.datetime:
+        return self.__time
+
     def is_foreign(self) -> bool:
         return self.__base_currency != self.__currency
 
     def __str__(self):
-        formatter = "%s -> %s: %.4f %s"
-        args = (self.__src, self.__dst, self.__cash, self.__currency)
+        formatter = "%s -> %s: %.2f %s at %s"
+        args = (self.__src, self.__dst, self.__cash, self.__currency, self.__time)
         if self.is_foreign():
-            formatter += " (%.4f %s with course %.4f %s/%s)"
+            formatter += " (%.2f %s with course %.8f %s/%s)"
             args = args + (self.__cash * self.__course, self.__base_currency, self.__course, self.__currency,
                            self.__base_currency)
         return formatter % args
