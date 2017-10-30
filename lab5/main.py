@@ -1,11 +1,53 @@
 import lab5.restrictions as restrictions
 from datetime import date, datetime
-from csv import reader
+from csv import reader, writer
 from sys import stderr
+from lxml import etree
+
+
+class MakeCSV:
+    def __init__(self, *args):
+        self.__attr = args
+
+    def __get__(self, instance, owner):
+        parts = list()
+        for attr, attr_type in self.__attr:
+            attr_value = instance.__dict__[attr]
+            if attr_type == datetime.date:
+                parts.append(attr_value.strftime(instance.get_date_format()))
+            else:
+                parts.append(str(attr_value))
+        return parts
+
+
+class MakeXML:
+    def __init__(self, *args):
+        self.__attr = args
+
+    def __get__(self, instance, owner):
+        root = etree.Element(owner.__name__)
+        replaced = "_" + owner.__name__ + "__"
+        for attr, attr_type in self.__attr:
+            attr_value = instance.__dict__[attr]
+            child = etree.Element(attr.replace(replaced, ""))
+            if attr_type == datetime.date:
+                child.text = attr_value.strftime(instance.get_date_format())
+            else:
+                child.text = str(attr_value)
+            root.append(child)
+        return root
 
 
 class Person:
+    __attributes = (
+        ("_Person__name", str),
+        ("_Person__surname", str),
+        ("_Person__passport", int),
+        ("_Person__birth_date", datetime.date)
+    )
     __date_format = "%d.%m.%Y"
+    csv_data = MakeCSV(*__attributes)
+    xml_data = MakeXML(*__attributes)
 
     @classmethod
     def from_row(cls, row):
@@ -13,6 +55,10 @@ class Person:
         passport = int(passport)
         birth_date = datetime.strptime(birth_date, cls.__date_format).date()
         return Person(name, surname, passport, birth_date)
+
+    @classmethod
+    def get_date_format(cls):
+        return cls.__date_format
 
     def __init__(self, name, surname, passport_number, birth_date):
         self.name = name
@@ -48,13 +94,12 @@ class Person:
         return self.__birth_date
 
     @restrictions.instance(date)
-    @restrictions.in_range(date(1900, 1, 1), datetime.now().date())
+    @restrictions.in_range(date(1800, 1, 1), datetime.now().date())
     def _set_birth_date(self, value):
         self.__birth_date = value
 
     def __str__(self):
-        parts = [self.name, self.passport_number, self.birth_date.strftime(self.__date_format)]
-        return "%s{{ %s }}" % (str(self.__class__), ", ".join(map(str, parts)))
+        return "%s{{ %s }}" % (str(self.__class__), ", ".join(self.csv_data))
 
     name = property(_get_name, _set_name)
     surname = property(_get_surname, _set_surname)
@@ -87,11 +132,34 @@ class PersonCSVLoader:
                 try:
                     yield Person.from_row(row)
                 except (AssertionError, ValueError) as err:
-                    print(PersonCSVLoader.ParsingException(err, row_number), file=stderr)
+                    raise PersonCSVLoader.ParsingException(err, row_number)
 
 
-try:
-    for person in PersonCSVLoader.load("persons.csv"):
-        print(person)
-except PersonCSVLoader.ParsingException as ex:
-    print(ex, file=stderr)
+def read_from_csv(filename):
+    try:
+        return [person for person in PersonCSVLoader.load(filename)]
+    except PersonCSVLoader.ParsingException as ex:
+        print(ex, file=stderr)
+        return None
+
+
+def write_to_csv(filename, persons):
+    with open(filename, "w", newline='') as file:
+        csv_writer = writer(file)
+        for person in persons:
+            csv_writer.writerow(person.csv_data)
+
+
+def write_to_xml(filename, persons):
+    with open(filename, "w") as file:
+        root = etree.Element("root")
+        for person in persons:
+            root.append(person.xml_data)
+        file.write(etree.tostring(root, pretty_print=True).decode("utf-8"))
+
+
+read_from_csv("persons.csv")
+person_list = read_from_csv("persons_norm.csv")
+if person_list is not None:
+    write_to_csv("reflection.csv", person_list)
+    write_to_xml("reflection.xml", person_list)

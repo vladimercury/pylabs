@@ -1,0 +1,44 @@
+<root>
+  <Person>
+    <name>Anna</name>
+    <surname>Dewitt</surname>
+    <passport>192001</passport>
+    <birth_date>08.10.1893</birth_date>
+  </Person>
+  <Person>
+    <name>Booker</name>
+    <surname>DeWitt</surname>
+    <passport>104819</passport>
+    <birth_date>19.04.1874</birth_date>
+  </Person>
+  <Person>
+    <name>Elizabeth</name>
+    <surname>Comstock</surname>
+    <passport>192012</passport>
+    <birth_date>08.10.1893</birth_date>
+  </Person>
+  <Person>
+    <name>Zachary Hale</name>
+    <surname>Comstock</surname>
+    <passport>109219</passport>
+    <birth_date>19.04.1874</birth_date>
+  </Person>
+  <Person>
+    <name>Adam</name>
+    <surname>Jensen</surname>
+    <passport>702103</passport>
+    <birth_date>09.03.1993</birth_date>
+  </Person>
+  <Person>
+    <name>Megan</name>
+    <surname>Reed</surname>
+    <passport>721901</passport>
+    <birth_date>01.01.1995</birth_date>
+  </Person>
+  <Person>
+    <name>David</name>
+    <surname>Sarif</surname>
+    <passport>690123</passport>
+    <birth_date>02.03.1970</birth_date>
+  </Person>
+</root>
