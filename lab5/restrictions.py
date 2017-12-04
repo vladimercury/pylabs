@@ -37,7 +37,7 @@ def length(minimum, maximum):
         @wraps(function)
         def wrapper(self, value):
             if len(value) < minimum or len(value) > maximum:
-                raise AssertionError("Value length does not fits range " + str((minimum, maximum)))
+                raise AssertionError("Value length does not fit range " + str((minimum, maximum)))
             return function(self, value)
         return wrapper
     return decorator
@@ -48,7 +48,7 @@ def in_range(minimum, maximum):
         @wraps(function)
         def wrapper(self, value):
             if value < minimum or value > maximum:
-                raise AssertionError("Value does not fits range " + str((minimum, maximum)))
+                raise AssertionError("Value does not fit range " + str((minimum, maximum)))
             return function(self, value)
         return wrapper
     return decorator

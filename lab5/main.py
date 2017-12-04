@@ -13,7 +13,7 @@ class MakeCSV:
         parts = list()
         for attr, attr_type in self.__attr:
             attr_value = instance.__dict__[attr]
-            if attr_type == datetime.date:
+            if isinstance(attr_value, date):
                 parts.append(attr_value.strftime(instance.get_date_format()))
             else:
                 parts.append(str(attr_value))
@@ -40,10 +40,10 @@ class MakeXML:
 
 class Person:
     __attributes = (
+        ("_Person__birth_date", datetime.date),
         ("_Person__name", str),
         ("_Person__surname", str),
-        ("_Person__passport", int),
-        ("_Person__birth_date", datetime.date)
+        ("_Person__passport", int)
     )
     __date_format = "%d.%m.%Y"
     csv_data = MakeCSV(*__attributes)
@@ -126,18 +126,28 @@ class PersonCSVLoader:
     def load(file_name):
         with open(file_name, 'r', encoding='utf-8') as file:
             csv_reader = reader(file, delimiter=',', quotechar='"')
-            row_number = 0
-            for row in csv_reader:
-                row_number += 1
+            for row_number, row in enumerate(csv_reader):
                 try:
                     yield Person.from_row(row)
                 except (AssertionError, ValueError) as err:
-                    raise PersonCSVLoader.ParsingException(err, row_number)
+                    raise PersonCSVLoader.ParsingException(err, row_number + 1)
+
+
+def check_csv(filename):
+    gen = PersonCSVLoader.load(filename)
+    try:
+        while True:
+            try:
+                person = next(gen)
+            except PersonCSVLoader.ParsingException as ex:
+                print(ex, file=stderr)
+    except Exception:
+        pass
 
 
 def read_from_csv(filename):
     try:
-        return [person for person in PersonCSVLoader.load(filename)]
+        return list(PersonCSVLoader.load(filename))
     except PersonCSVLoader.ParsingException as ex:
         print(ex, file=stderr)
         return None
@@ -158,8 +168,9 @@ def write_to_xml(filename, persons):
         file.write(etree.tostring(root, pretty_print=True).decode("utf-8"))
 
 
-read_from_csv("persons.csv")
+check_csv("persons.csv")
 person_list = read_from_csv("persons_norm.csv")
 if person_list is not None:
+    [print(person) for person in person_list]
     write_to_csv("reflection.csv", person_list)
     write_to_xml("reflection.xml", person_list)
